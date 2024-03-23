@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.sever0x.bookstore.proto";
+option java_outer_classname = "BookProto";
+
+package com.sever0x.bookstore;
+
+message BookResponse {
+  string id = 1;
+  string title = 2;
+  string author = 3;
+  string isbn = 4;
+  int32 quantity = 5;
+}
+
+message AddBookRequest {
+  string title = 1;
+  string author = 2;
+  string isbn = 3;
+  int32 quantity = 4;
+}
+
+service BookService {
+  rpc AddBook(AddBookRequest) returns (BookResponse);
+}
