@@ -21,6 +21,44 @@ message AddBookRequest {
   int32 quantity = 4;
 }
 
+message GetBookRequest {
+  string id = 1;
+}
+
+message GetBooksRequest {
+  int32 pageNumber = 1;
+  int32 pageSize = 2;
+  string sortBy = 3;
+  string direction = 4;
+}
+
+message GetBooksResponse {
+  int32 currentPage = 1;
+  int32 totalPages = 2;
+  repeated BookResponse books = 3;
+}
+
+message UpdateBookRequest {
+  string id = 1;
+  string title = 2;
+  string author = 3;
+  string isbn = 4;
+  int32 quantity = 5;
+}
+
+message DeleteBookRequest {
+  string id = 1;
+}
+
+message DeleteBookResponse {
+  string id = 1;
+  bool success = 2;
+}
+
 service BookService {
   rpc AddBook(AddBookRequest) returns (BookResponse);
+  rpc GetBook(GetBookRequest) returns (BookResponse);
+  rpc GetBooks(GetBooksRequest) returns (GetBooksResponse);
+  rpc UpdateBook(UpdateBookRequest) returns (BookResponse);
+  rpc DeleteBook(DeleteBookRequest) returns (DeleteBookResponse);
 }
