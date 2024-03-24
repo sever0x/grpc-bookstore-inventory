@@ -8,6 +8,7 @@ import com.sever0x.bookstore.validation.BookValidator;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+@Slf4j
 @GrpcService
 @RequiredArgsConstructor
 public class BookServiceImpl extends BookServiceGrpc.BookServiceImplBase {
@@ -29,10 +31,10 @@ public class BookServiceImpl extends BookServiceGrpc.BookServiceImplBase {
 
     @Override
     @Transactional
-    public void addBook(AddBookRequest addBookRequest, StreamObserver<BookResponse> responseObserver) {
-        validateRequest(addBookRequest, responseObserver);
+    public void addBook(AddBookRequest request, StreamObserver<BookResponse> responseObserver) {
+        handleInvalidRequest(request.getTitle(), request.getAuthor(), request.getIsbn(), request.getQuantity(), responseObserver);
         BookResponse bookResponse = bookMapper.bookToBookResponse(
-                bookRepository.save(bookMapper.addBookRequestToBook(addBookRequest))
+                bookRepository.save(bookMapper.addBookRequestToBook(request))
         );
         responseObserver.onNext(bookResponse);
         responseObserver.onCompleted();
@@ -46,32 +48,30 @@ public class BookServiceImpl extends BookServiceGrpc.BookServiceImplBase {
                 .map(bookMapper::bookToBookResponse)
                 .ifPresentOrElse(
                         responseObserver::onNext,
-                        () -> responseObserver.onError(Status.NOT_FOUND
-                                .withDescription("Book not found with id: " + bookId)
-                                .asRuntimeException())
+                        () -> handleNotFound(bookId, responseObserver)
                 );
         responseObserver.onCompleted();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public void getBooks(GetBooksRequest getBooksRequest, StreamObserver<GetBooksResponse> responseObserver) {
-        Page<Book> books = bookRepository.findAll(getBooksPageable(getBooksRequest));
-        GetBooksResponse getBooksResponse = GetBooksResponse.newBuilder()
-                .setCurrentPage(getBooksRequest.getPageNumber())
+    public void getBooks(GetBooksRequest request, StreamObserver<GetBooksResponse> responseObserver) {
+        Page<Book> books = bookRepository.findAll(getBooksPageable(request));
+        GetBooksResponse response = GetBooksResponse.newBuilder()
+                .setCurrentPage(request.getPageNumber())
                 .setTotalPages(books.getTotalPages())
                 .addAllBooks(books.map(bookMapper::bookToBookResponse))
                 .build();
 
-        responseObserver.onNext(getBooksResponse);
+        responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
 
     @Override
     @Transactional
-    public void updateBook(UpdateBookRequest updateBookRequest, StreamObserver<BookResponse> responseObserver) {
-        validateRequest(updateBookRequest, responseObserver);
-        Book book = bookMapper.updateBookRequestToBook(updateBookRequest);
+    public void updateBook(UpdateBookRequest request, StreamObserver<BookResponse> responseObserver) {
+        handleInvalidRequest(request.getTitle(), request.getAuthor(), request.getIsbn(), request.getQuantity(), responseObserver);
+        Book book = bookMapper.updateBookRequestToBook(request);
         bookRepository.save(book);
 
         responseObserver.onNext(bookMapper.bookToBookResponse(book));
@@ -83,27 +83,37 @@ public class BookServiceImpl extends BookServiceGrpc.BookServiceImplBase {
     public void deleteBook(DeleteBookRequest request, StreamObserver<DeleteBookResponse> responseObserver) {
         UUID bookId = UUID.fromString(request.getId());
         if (!bookRepository.existsById(bookId)) {
-            responseObserver.onError(Status.NOT_FOUND
-                    .withDescription("Book not found with id: " + request.getId())
-                    .asRuntimeException());
+            handleNotFound(bookId, responseObserver);
+            return;
         }
         bookRepository.deleteById(bookId);
-        DeleteBookResponse deleteBookResponse = DeleteBookResponse.newBuilder()
+        DeleteBookResponse response = DeleteBookResponse.newBuilder()
                 .setId(request.getId())
                 .setSuccess(true)
                 .build();
-        responseObserver.onNext(deleteBookResponse);
+        responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
 
-    private Pageable getBooksPageable(GetBooksRequest getBooksRequest) {
-        return PageRequest.of(getBooksRequest.getPageNumber(), getBooksRequest.getPageSize(),
-                Sort.by(Sort.Direction.fromString(getBooksRequest.getDirection()), getBooksRequest.getSortBy()));
+    private Pageable getBooksPageable(GetBooksRequest request) {
+        return PageRequest.of(request.getPageNumber(), request.getPageSize(),
+                Sort.by(Sort.Direction.fromString(request.getDirection()), request.getSortBy()));
     }
 
-    private void validateRequest(Object request, StreamObserver<?> responseObserver) {
-        if (!bookValidator.isValidRequest(request)) {
-            responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("Invalid request data").asRuntimeException());
+    private void handleInvalidRequest(String title, String author, String isbn, int quantity,
+                                      StreamObserver<?> responseObserver) {
+        BookValidator.ValidationResult validationResult = bookValidator.validateRequest(title, author, isbn, quantity);
+
+        if (validationResult.hasErrors()) {
+            responseObserver.onError(Status.INVALID_ARGUMENT
+                    .withDescription(String.join(", ", validationResult.getErrors()))
+                    .asRuntimeException());
         }
+    }
+
+    private void handleNotFound(UUID bookId, StreamObserver<?> responseObserver) {
+        responseObserver.onError(Status.NOT_FOUND
+                .withDescription("Book not found with id: " + bookId)
+                .asRuntimeException());
     }
 }
