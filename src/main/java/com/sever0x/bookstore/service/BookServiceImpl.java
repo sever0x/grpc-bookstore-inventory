@@ -18,6 +18,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+/**
+ * Implementation of the gRPC service for managing books.
+ * The service provides the following functionality:
+ * <ul>
+ *     <li>Adding a new book</li>
+ *     <li>Retrieving information about a book by its identifier</li>
+ *     <li>Retrieving a list of books with pagination and sorting capabilities</li>
+ *     <li>Updating information about an existing book</li>
+ *     <li>Deleting a book by its identifier</li>
+ * </ul>
+ */
 @Slf4j
 @GrpcService
 @RequiredArgsConstructor
@@ -29,6 +40,12 @@ public class BookServiceImpl extends BookServiceGrpc.BookServiceImplBase {
 
     private final BookRepository bookRepository;
 
+    /**
+     * Adds a new book to the repository.
+     *
+     * @param request          the request containing information about the new book
+     * @param responseObserver the observer to send the response to the client
+     */
     @Override
     @Transactional
     public void addBook(AddBookRequest request, StreamObserver<BookResponse> responseObserver) {
@@ -40,6 +57,12 @@ public class BookServiceImpl extends BookServiceGrpc.BookServiceImplBase {
         responseObserver.onCompleted();
     }
 
+    /**
+     * Retrieves information about a book by its identifier.
+     *
+     * @param request          the request containing the book identifier
+     * @param responseObserver the observer to send the response to the client
+     */
     @Override
     @Transactional(readOnly = true)
     public void getBook(GetBookRequest request, StreamObserver<BookResponse> responseObserver) {
@@ -53,6 +76,12 @@ public class BookServiceImpl extends BookServiceGrpc.BookServiceImplBase {
         responseObserver.onCompleted();
     }
 
+    /**
+     * Retrieves a list of books with pagination and sorting capabilities.
+     *
+     * @param request          the request containing pagination and sorting parameters
+     * @param responseObserver the observer to send the response to the client
+     */
     @Override
     @Transactional(readOnly = true)
     public void getBooks(GetBooksRequest request, StreamObserver<GetBooksResponse> responseObserver) {
@@ -67,6 +96,12 @@ public class BookServiceImpl extends BookServiceGrpc.BookServiceImplBase {
         responseObserver.onCompleted();
     }
 
+    /**
+     * Updates information about an existing book.
+     *
+     * @param request          the request containing the new book information
+     * @param responseObserver the observer to send the response to the client
+     */
     @Override
     @Transactional
     public void updateBook(UpdateBookRequest request, StreamObserver<BookResponse> responseObserver) {
@@ -78,6 +113,12 @@ public class BookServiceImpl extends BookServiceGrpc.BookServiceImplBase {
         responseObserver.onCompleted();
     }
 
+    /**
+     * Deletes a book by its identifier.
+     *
+     * @param request          the request containing the book identifier
+     * @param responseObserver the observer to send the response to the client
+     */
     @Override
     @Transactional
     public void deleteBook(DeleteBookRequest request, StreamObserver<DeleteBookResponse> responseObserver) {
