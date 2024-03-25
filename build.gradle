@@ -68,7 +68,6 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
-    useTestNG()
 }
 
 protobuf {
