@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  grpc-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env
+    ports:
+      - "9090:9090"
+    environment:
+      DB_URL: ${DB_URL}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_USERNAME: ${DB_USERNAME}
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres:latest
+    env_file:
+      - ./.env
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: bookstore
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
