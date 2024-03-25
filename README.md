@@ -77,8 +77,6 @@ This will build the application Docker image and start the gRPC service and Post
 
 The gRPC service will be available on `http://localhost:9090`.
 
-Конечно, добавлю инструкции по работе с gRPC сервисом в Postman:
-
 ## Working with bookstore-inventory
 
 You can use Postman to interact with the gRPC service.
